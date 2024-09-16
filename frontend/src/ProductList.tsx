@@ -5,7 +5,7 @@ import { Product } from "./types";
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [limit, setLimit] = useState<number>(0); // Start with 0, updated from backend
+  const [limit, setLimit] = useState<number>(1); // Start with 0, updated from backend
   const [page, setPage] = useState<number>(0); // Offset value
   const [totalProducts, setTotalProducts] = useState<number>(0);
 
@@ -17,7 +17,7 @@ const ProductList: React.FC = () => {
           limit: number;
           offset: number;
           products: Product[];
-        }>("http://localhost:8080/products", {
+        }>("localhost:8080/products", {
           params: {
             limit: limit > 0 ? limit : undefined, // Only include limit if it's set
             offset: page,

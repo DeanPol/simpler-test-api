@@ -1,0 +1,3 @@
+# Ignore Go test files
+
+\*\_test.go

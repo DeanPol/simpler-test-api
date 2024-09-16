@@ -6,9 +6,6 @@ import (
 	"log" // printing to console purposes
 	"os"  // should be used for loading our .env files
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 )
 
@@ -46,29 +43,7 @@ func InitializeDB() *sql.DB {
 
     log.Println("Successfully connected to the database!")
 
-    runMigrations(db)
-
     DB = db
     return db
 }
 
-// Applies the latest migrations using golang-migrate
-func runMigrations(db *sql.DB) {
-    driver, err := postgres.WithInstance(db, &postgres.Config{})
-    if err != nil {
-        log.Fatalf("Could not create migration driver: %v", err)
-    }
-
-    m, err := migrate.NewWithDatabaseInstance(
-        "file://migrations",
-        "postgres", driver)
-    if err != nil {
-        log.Fatalf("Could not start migration: %v", err)
-    }
-
-    if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-        log.Fatalf("Could not apply migrations: %v", err)
-    }
-
-    log.Println("Migrations applied successfully!")
-}

@@ -35,7 +35,7 @@ func main() {
 	routes.RegisterProductRoutes(r)
 
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:3000"}),
+		handlers.AllowedOrigins([]string{"http://localhost"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
 		handlers.AllowedHeaders([]string{"Content-Type"}),
 	)(r)
