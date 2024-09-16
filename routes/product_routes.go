@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"simpler-test-api/db"
 	"simpler-test-api/models"
+	"strconv" // convert a string to int
+
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -23,10 +26,10 @@ import (
 // HandleFunc allows us to register our functions to the HTTP methods with the given endpoint.
 func RegisterProductRoutes(r *mux.Router) {
 	r.HandleFunc("/products", CreateProduct).Methods("POST")
-	r.HandleFunc("/products/{id:[0-9]+}", GetProduct).Methods("GET")
+	r.HandleFunc("/products/{id:[0-9]+}", GetProductById).Methods("GET")
 	r.HandleFunc("/products/{id:[0-9]+}", UpdateProduct).Methods("PUT")
 	r.HandleFunc("/products/{id:[0-9]+}", DeleteProduct).Methods("DELETE")
-	r.HandleFunc("/products", ListProducts).Methods("GET")
+	r.HandleFunc("/products", GetProducts).Methods("GET")
 }
 
 func CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +60,7 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func GetProduct(w http.ResponseWriter, r *http.Request) {
+func GetProductById(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	var product models.Product
 	row := db.DB.QueryRow("SELECT id, name, description, price, stock FROM products WHERE id = $1", id)
@@ -73,7 +76,10 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(product)
 }
-
+/*
+    w.WriteHeader() sends an HTTP response status code to the client. The status code indicates the result of the HTTP request.
+    In this example, http.StatusNoContent corresponds to the status code 204 (request successful but no content to send in the response body)
+*/
 func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	var product models.Product
@@ -102,8 +108,46 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func ListProducts(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.DB.Query("SELECT id, name, description, price, stock FROM products")
+/*
+    In the following method we allow for pagination by retrieving the 'limit' and 'offset' url params.
+    If none are provided, we use our environment variables. If something goes wrong, default values are used instead.
+*/
+
+/*
+    rows.Close(): Closes the database result set. Not closing the rows can lead to memory leaks or a situation
+    where too many open connections to the database accumulate.
+
+    defer: keyword that schedules the execution of the following function to occur after the surrounding function has finished execution.
+    No matter how the function exits, the rows.Close() will be called. (Similar to 'finaly' in 'try/catch')
+*/
+
+func GetProducts(w http.ResponseWriter, r *http.Request) {
+    limitStr := r.URL.Query().Get("limit")
+    offsetStr := r.URL.Query().Get("offset")
+
+    limit := getEnvInt("DEFAULT_PAGINATION_LIMIT", 10)
+    offset := getEnvInt("DEFAULT_PAGINATION_OFFSET", 0)
+
+    if limitStr != "" {
+        parsedLimit, err := strconv.Atoi(limitStr)
+        if err != nil || parsedLimit <= 0 {
+            http.Error(w, "Invalid limit value", http.StatusBadRequest)
+            return
+        }
+        limit = parsedLimit
+    }
+
+    if offsetStr != "" {
+        parsedOffset, err := strconv.Atoi(offsetStr)
+        if err != nil || parsedOffset < 0 {
+            http.Error(w, "Invalid offset value", http.StatusBadRequest)
+            return
+        }
+        offset = parsedOffset
+    }
+
+    query := `SELECT id, name, description, price, stock FROM products LIMIT $1 OFFSET $2`
+	rows, err := db.DB.Query(query, limit, offset)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -121,4 +165,18 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(products)
+}
+
+// Helper function to fetch .env variable with fallback value
+// TODO: If more helper functions, I should create a new directory
+func getEnvInt(key string, defaultValue int) int {
+    valueStr := os.Getenv(key)
+    if valueStr == "" {
+        return defaultValue
+    }
+    value, err := strconv.Atoi(valueStr)
+    if err != nil {
+        return defaultValue
+    }
+    return value
 }
