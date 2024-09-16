@@ -1,60 +1,55 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Product, ProductCount } from "./types";
+import { Product } from "./types";
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(10);
+  const [limit, setLimit] = useState<number>(0); // Start with 0, updated from backend
+  const [page, setPage] = useState<number>(0); // Offset value
   const [totalProducts, setTotalProducts] = useState<number>(0);
 
   useEffect(() => {
-    const fetchProductCount = async () => {
-      try {
-        const response = await axios.get<ProductCount>(
-          "http://localhost:8080/products/total"
-        );
-        setLimit(response.data.limit);
-        setTotalProducts(response.data.total);
-      } catch (err) {
-        setError("Error fetching product count");
-        console.error("Error fetching product count", err);
-      }
-    };
-
     const fetchProducts = async () => {
       try {
-        const response = await axios.get<Product[]>(
-          "http://localhost:8080/products",
-          {
-            params: {
-              _page: page,
-              _limit: limit,
-            },
-          }
-        );
-        setProducts(response.data);
+        const response = await axios.get<{
+          total: number;
+          limit: number;
+          offset: number;
+          products: Product[];
+        }>("http://localhost:8080/products", {
+          params: {
+            limit: limit > 0 ? limit : undefined, // Only include limit if it's set
+            offset: page,
+          },
+        });
+
+        // Set data from API response
+        setProducts(response.data.products);
+        setTotalProducts(response.data.total);
+
+        // Set limit and page based on backend response
+        if (limit === 0) setLimit(response.data.limit); // Only set the limit if it's not yet set
+        setPage(response.data.offset);
       } catch (err) {
         setError("Error fetching products");
         console.error("Error fetching products", err);
       }
     };
 
-    fetchProductCount();
     fetchProducts();
-  }, [page, limit]);
+  }, [page, limit]); // Limit and page are dependencies
 
   // Calculate total number of pages
   const totalPages = Math.ceil(totalProducts / limit);
 
   // Handlers for pagination buttons
   const handlePrevious = () => {
-    if (page > 1) setPage(page - 1);
+    if (page > 0) setPage(page - 1);
   };
 
   const handleNext = () => {
-    if (page < totalPages) setPage(page + 1);
+    if (page < totalPages - 1) setPage(page + 1);
   };
 
   return (
@@ -69,10 +64,10 @@ const ProductList: React.FC = () => {
         ))}
       </ul>
       <div>
-        <button onClick={handlePrevious} disabled={page === 1}>
+        <button onClick={handlePrevious} disabled={page === 0}>
           Previous
         </button>
-        <button onClick={handleNext} disabled={page === totalPages}>
+        <button onClick={handleNext} disabled={page >= totalPages - 1}>
           Next
         </button>
       </div>

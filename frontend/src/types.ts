@@ -5,8 +5,3 @@ export interface Product {
   price: number;
   stock: number;
 }
-
-export interface ProductCount {
-  total: number;
-  limit: number;
-}

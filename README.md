@@ -11,3 +11,12 @@ Defining our model, creating our CRUD methods and registering our handlers.
 ## 0.0.3
 
 Pagination and more .env variables.
+
+## 0.0.4
+
+Basic React template to display list of products. Routes/Handlers directory layout refactor.
+
+## 0.0.5
+
+Remove the total_products handler and attach the product total count and limit to the get products payload.
+Added test cases.

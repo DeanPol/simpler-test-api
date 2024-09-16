@@ -6,6 +6,7 @@ import (
 	"simpler-test-api/db"
 	"simpler-test-api/routes"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -17,8 +18,9 @@ import (
 	line arguments.
 	Here we :
 	1) specify our .env file which holds our necessary credentials for the db connection,
-	2) initialize our database, and
-	3) register our routes/handlers needed to process our product records.
+	2) initialize our database,
+	3) - since 0.0.2 - register our routes/handlers needed to process our product records.
+	4) - since 0.0.4 - include CORS middleware
 */
 func main() {
     err := godotenv.Load()
@@ -32,5 +34,15 @@ func main() {
 
 	routes.RegisterProductRoutes(r)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"http://localhost:3000"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+		handlers.AllowedHeaders([]string{"Content-Type"}),
+	)(r)
+
+	log.Println("Server starting on port 8080...")
+	
+	if err := http.ListenAndServe(":8080", corsHandler); err != nil {
+		log.Fatalf("Error starting server: %v", err)
+	}
 }
