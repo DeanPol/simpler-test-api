@@ -17,7 +17,7 @@ const ProductList: React.FC = () => {
           limit: number;
           offset: number;
           products: Product[];
-        }>("localhost:8080/products", {
+        }>("http://localhost:8080/products", {
           params: {
             limit: limit > 0 ? limit : undefined, // Only include limit if it's set
             offset: page,

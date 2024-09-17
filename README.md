@@ -8,10 +8,17 @@ I have also included some test cases, within the '/tests/' directory, that can b
 
 How to run:
 
-- Create a local postgres instance and save the connection details.
-- (Optional) Use the provided sql file to populate your table with some entries.
 - Create a new .env file following the provided .env.example and insert your database connection details.
 - Have Docker installed and ready. Run `docker compose up --build` in the project root directory.
+- Use the provided sql file to populate your table with some entries OR make a POST request with the following template of a body :
+
+  {
+  "name": "Sample Product",
+  "description": "A description of the sample product.",
+  "price": 19.99,
+  "stock": 50
+  }
+
 - Navigate to your localhost to view the table entries, or use an HTTP client for more options.
 
 # Changelog

@@ -21,11 +21,19 @@ var DB *sql.DB
 	and then terminates the program. It is the equivalent to log.Printf() + os.Exit(1).
 */
 func InitializeDB() *sql.DB {
-    dbHost := os.Getenv("DB_HOST")
-    dbPort := os.Getenv("DB_PORT")
-    dbUser := os.Getenv("DB_USER")
-    dbPassword := os.Getenv("DB_PASSWORD")
-    dbName := os.Getenv("DB_NAME")
+    dbHost := os.Getenv("POSTGRES_HOST")
+    if dbHost == "" {
+		dbHost = "postgres" // Fallback to the Docker service name
+	}
+
+	dbPort := os.Getenv("POSTGRES_PORT")
+	if dbPort == "" {
+		dbPort = "5432" // Default PostgreSQL port
+	}
+
+    dbUser := os.Getenv("POSTGRES_USER")
+    dbPassword := os.Getenv("POSTGRES_PASSWORD")
+    dbName := os.Getenv("POSTGRES_DB")
 
     psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
         dbHost, dbPort, dbUser, dbPassword, dbName)
@@ -43,7 +51,41 @@ func InitializeDB() *sql.DB {
 
     log.Println("Successfully connected to the database!")
 
+    runMigrations(db)
+
     DB = db
     return db
+}
+
+/*
+    Running migrations manually here.
+    Would rather have a migrations directory and have a more modular function body:
+
+    m, err := migrate.NewWithDatabaseInstance(
+        "file://migrations",
+        "postgres", driver)
+
+    if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+        log.Fatalf("Could not apply migrations: %v", err)
+    }
+
+    log.Println("Migrations applied successfully!")
+}
+    But this is causing me a lot of trouble when running docker for some reason.
+*/
+
+func runMigrations(db *sql.DB) {
+    _, err := db.Exec(`
+        CREATE TABLE IF NOT EXISTS products (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            price DECIMAL(10, 2) NOT NULL,
+            stock INTEGER NOT NULL
+        );
+    `)
+    if err != nil {
+        log.Fatalf("Error running migrations: %v", err)
+    }
 }
 
